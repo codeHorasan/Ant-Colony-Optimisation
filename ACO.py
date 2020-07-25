@@ -42,12 +42,12 @@ class Graph():
 
 #edge_list = (['A','B',5],['A','C',9],['B','D',1],['C','D',13])
 edge_list = (['A','B',14],['A','C',5],['A','D',7],['B','F',4],['B','C',3],['C','B',3],['D','E',6],['C','D',4],['D','C',4],['E','C',5],['C','E',5],['C','F',10],['E','F',7])
+#edge_list = (['A','B',17],['B','C',5],['C','G',7],['A','D',7],['D','E',20],['D','F',10],['F','E',8],['E','G',12])
+#edge_list = (['A','B',1],['A','C',7],['B','D',2],['C','D',8],['C','F',15],['D','F',7],['D','E',9],['E','F',3])
 graph = Graph(edge_list)
-graph.show_info()
-print("*********************************************************")
 
 class Ant():
-    def __init__(self,graph,alpha,beta,delta = 1,start = 'A',end = 'D'):
+    def __init__(self,graph,alpha,beta,delta,start = 'A',end = 'D'):
         self.graph = graph
         self.alpha = alpha
         self.beta = beta
@@ -99,6 +99,7 @@ class AntColony():
         self.end = end
         self.nest_size = nest_size
         self.iteration = iteration
+        self.best_route = ()
         self.apply_ACO()
 
     def evaporate(self,decay = 0.05):
@@ -107,23 +108,64 @@ class AntColony():
 
     def apply_ACO(self):
         list_of_ants = [Ant(self.graph,self.alpha,self.beta,delta = self.delta,start = self.start, end = self.end) for i in range(self.nest_size)]
-        self.last_routes = []
-        self.best_route = []
+        self.frequency_list = {}
+        self.distance_list = {}
+        self.info_list = {}
         for ite in range(self.iteration):
             for ant in list_of_ants:
                 ant.go_to_target()
-                if ite == self.iteration-1:
-                    self.last_routes.append(ant.route)
+                if ite == self.iteration - 1:
+                    if str(ant.route) not in list(self.frequency_list.keys()):
+                        self.frequency_list[str(ant.route)] = 1
+                    else:
+                        self.frequency_list[str(ant.route)] += 1
             for ants in list_of_ants:
                 ants.deposit()
             self.evaporate()
             list_of_ants = [Ant(self.graph, self.alpha, self.beta, delta=self.delta, start=self.start, end=self.end) for i in range(self.nest_size)]
 
-        for elm in self.last_routes:
-            print(elm)
+        for x in list(self.frequency_list.keys()):
+            x = list(x)
+            x = [a.strip('[]') for a in x]
+            x = [a.strip(' ') for a in x]
+            x = [a.strip(',') for a in x]
+            x = [a.strip("''") for a in x]
+            x = [a.strip('') for a in x]
+            while "" in x:
+                x.remove("")
+            sum = 0
+            for i in range(len(x) - 1):
+                a,b = x[i],x[i+1]
+                for j in self.graph.list_of_edges:
+                    if j.s == a and j.t == b:
+                        sum += j.weight
+            self.distance_list[str(x)] = sum
+
+        for a,b in self.distance_list.items():
+            for c,d in self.frequency_list.items():
+                if a == c:
+                    self.info_list[a] = {b:d}
+
+        for k,v in self.info_list.items():
+            string1 = k
+            for a,b in v.items():
+                string2 = "Distance: {} -- Frequency: {}".format(a,b)
+            print("Route:",string1,string2)
+
+        list_for_min = [list(b.keys()) for a, b in self.info_list.items()]
+        self.minimum = min(list_for_min)[0]
+
+        for k,v in self.info_list.items():
+            for v2 in v.keys():
+                if v2 == self.minimum:
+                    self.optimal_route = (k,v2)
+
+        print("*********************************************")
+        print("Optimal Route:",self.optimal_route[0],"Optimal Distance:",self.optimal_route[1])
 
 
 #colony = AntColony(graph,1,1,30,200,delta=1,start='A',end='D')
 colony = AntColony(graph,1,1,30,100,delta=1,start='A',end='F')
+#colony = AntColony(graph,1,0.01,30,200,delta=1,start='A',end='G')
+#colony = AntColony(graph,1,1,30,100,delta=1,start='A',end='F')
 graph.show_info()
-
